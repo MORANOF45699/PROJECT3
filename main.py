@@ -91,49 +91,6 @@ def summarize_pcap(filename):
     except Exception as e:
         print(f"\033[91mError reading pcap file: {e}\033[0m")
 
-
-
-'''def log_packet(packet):
-    if IP in packet or IPv6 in packet:
-        source_ip = extract_source_ip(packet)
-        destination_ip = extract_destination_ip(packet)
-        #print(f"Details Packet:")
-        current_time = time.strftime("%Y-%m-%d %H:%M:%S")
-        #print(f"Time: {current_time}")
-        #print(f"Summary: {packet.summary()}")
-
-        data = []
-
-        if IP in packet:
-            source_ip = extract_source_ip(packet)
-            destination_ip = extract_destination_ip(packet)
-            #data.append(["Source IP", f"{source_ip}"])
-            #data.append(["Destination IP", f"{destination_ip}"])
-        elif IPv6 in packet:
-            source_ip = extract_source_ip(packet)
-            destination_ip = extract_destination_ip(packet)
-            #data.append(["Source IPv6", f"{source_ip}"])
-            #data.append(["Destination IPv6", f"{destination_ip}"])
-        else:
-            data.append(["No IP find?"])
-
-        if Ether in packet:
-            source_mac = extract_source_mac(packet)
-            destination_mac = extract_destination_mac(packet)
-            data.append(["Source MAC Address", f"{source_mac}"])
-            data.append(["Destination MAC Address", f"{destination_mac}"])
-            
-        table.clear_rows()
-        for entry in data:
-            table.add_row(entry)
-
-        # Log packet details if show_details is True
-        if show_details:
-            for entry in data:
-                print(f"  {entry[0]}: {entry[1]}")
-                
-'''
-
 def packet_callback(packet):
     global logo_printed
     if not logo_printed:
@@ -172,11 +129,7 @@ def packet_callback(packet):
 
     print(table)
     time.sleep(0)
-
-    # Log packet details if show_details is True
-   # if show_details:
-    #    log_packet(packet)
-
+    
     # เพิ่มแพ็คเก็ตลงในรายการ
     packet_list.append(packet)
 
@@ -191,8 +144,6 @@ def packet_callback(packet):
         print(f"{RED}TCP Payload (Text):\n{tcp_payload[:500].decode('utf-8', 'ignore')}{RESET}\n")
         payload_hex = ":".join("{:02x}".format(c) for c in tcp_payload)
         print(f"{BROWN}TCP Payload (Hex):\n{payload_hex[:200]}{RESET}\n")
-        payload_ascii = ''.join(chr(c) if 32 <= c <= 126 else '.' for c in tcp_payload)
-        print(f"{MAGENTA}TCP Payload (ASCII):\n{payload_ascii[:200]}{RESET}\n")
 
     elif is_udp_packet(packet):
         source_ip = extract_source_ip(packet)
@@ -203,9 +154,7 @@ def packet_callback(packet):
         print(f"{RED}UDP Payload (Text):\n{udp_payload[:500].decode('utf-8', 'ignore')}{RESET}\n")
         payload_hex = ":".join("{:02x}".format(c) for c in udp_payload)
         print(f"{BROWN}UDP Payload (Hex):\n{payload_hex[:200]}{RESET}\n")
-        payload_ascii = ''.join(chr(c) if 32 <= c <= 126 else '.' for c in udp_payload)
-        print(f"{MAGENTA}UDP Payload (ASCII):\n{payload_ascii[:200]}{RESET}\n")
-
+        
     elif is_http_packet(packet):
         source_ip = extract_source_ip(packet)
         destination_ip = extract_destination_ip(packet)
@@ -215,9 +164,7 @@ def packet_callback(packet):
         print(f"{GREEN}HTTP Payload (Text):\n{http_payload[:500].decode('utf-8', 'ignore')}{RESET}\n")
         payload_hex = ":".join("{:02x}".format(c) for c in http_payload)
         print(f"{GREEN}HTTP Payload (Hex):\n{payload_hex[:200]}{RESET}\n")
-        payload_ascii = ''.join(chr(c) if 32 <= c <= 126 else '.' for c in http_payload)
-        print(f"{MAGENTA}HTTP Payload (ASCII):\n{payload_ascii[:200]}{RESET}\n")
-
+        
     elif is_icmp_packet(packet):
         source_ip = extract_source_ip(packet)
         destination_ip = extract_destination_ip(packet)
@@ -232,9 +179,6 @@ def packet_callback(packet):
         print(f"{GREEN}DNS Payload (Text):\n{dns_payload[:500].decode('utf-8', 'ignore')}{RESET}\n")
         payload_hex = ":".join("{:02x}".format(c) for c in dns_payload)
         print(f"{GREEN}DNS Payload (Hex):\n{payload_hex[:200]}{RESET}\n")
-        payload_ascii = ''.join(chr(c) if 32 <= c <= 126 else '.' for c in dns_payload)
-        print(f"{MAGENTA}DNS Payload (ASCII):\n{payload_ascii[:200]}{RESET}\n")
-
     time.sleep(0)
 
 def start_stop_capture_or_read():
@@ -268,12 +212,43 @@ def start_stop_capture_or_read():
             print("\033[92mInvalid input. Please enter a valid choice (1-7).\033[0m")
     time.sleep(0)
 
-try:
-    user_input = input("\033[92mDo you want to start packet capture? (1: yes / 2: no): \033[0m")
-    if user_input.lower() == '1' or user_input == 'yes' or user_input == 'y':
-        start_stop_capture_or_read()
-    elif user_input.lower() == '2' or user_input == 'no' or user_input == 'n':
-        print("\033[92mPacket capture is not started. You can start it later again.\033[0m")
-except KeyboardInterrupt:
-    print("\033[92mExiting the program \nThank you for using.\033[0m")
-    sys.exit(0)
+while True:
+    try:
+        user_input = input("\033[92mEnter your choice (1-7) or 'help': \033[0m")
+        
+        if user_input.lower() in ['start', '1']:
+            print("\033[92mStarting packet capture...\033[0m")
+            filter_expression = ""
+            sniff(filter=filter_expression, prn=packet_callback)
+
+        elif user_input.lower() in ['stop', '2']:
+            print("\033[92mStopping packet capture.\033[0m")
+            break  # Exit the loop to allow the program to terminate.
+
+        elif user_input.lower() in ['save', '3']:
+            filename = input("\033[92mEnter the filename for the pcap: \033[0m")
+            print(f"\033[92mSaving captured packets to '{filename}'.\033[0m")
+            save_pcap(packet_list, filename)
+
+        elif user_input.lower() in ['read', '4']:
+            filename = input("\033[92mEnter the filename of the pcap to read: \033[0m")
+            read_pcap(filename)
+
+        elif user_input.lower() in ['summarize', '5']:
+            filename = input("\033[92mEnter the filename of the pcap to summarize: \033[0m")
+            summarize_pcap(filename)
+
+        elif user_input.lower() in ['help', '6']:
+            display_help()
+
+        elif user_input.lower() in ['exit', '7']:
+            print("\033[92mExiting the program. Thank you for using!\033[0m")
+            sys.exit(0)
+
+        else:
+            print("\033[92mInvalid input. Please enter a valid choice (1-7).\033[0m")
+
+    except KeyboardInterrupt:
+        print("\033[92mExiting the program. Thank you for using!\033[0m")
+        sys.exit(0)
+
